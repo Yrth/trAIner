@@ -1,0 +1,467 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script type="text/javascript" src="{% static 'frontend/js/materialize.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'frontend/js/d3.min.js' %}"></script>
+    <!--Import Google Icon Font-->
+    <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import materialize.css-->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.0/themes/base/jquery-ui.css">
+    <link type="text/css" rel="stylesheet" href="{% static 'frontend/css/materialize.min.css' %}"  media="screen,projection"/>
+      <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'frontend/css/style.css' %}" />
+    <script src="{% static 'frontend/js/heatmap.js' %}"></script>
+    <script src="{% static 'frontend/js/classie.js' %}"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <script src="https://wzrd.in/standalone/function-plot@1.17.0"></script>
+    <link type="text/css" rel="stylesheet" href="{% static 'frontend/swalert/dist/sweetalert.css' %}"  media="screen,projection"/>
+    <script src="{% static 'frontend/swalert/dist/sweetalert.min.js' %}"></script>
+    <script src="{% static 'frontend/js/utf8_decode.js' %}"></script>
+<body>
+
+        <div id="canvas" style="position:absolute;top:0;left:0;"></div>
+        <div id="canvas2" style="position:absolute;top:0;left:0;"></div>
+        <div id="canvasGold" style="position:absolute;top:0;left:0;"></div>
+    <!--
+    <script type="text/javascript">
+        // taken from https://github.com/pa7/heatmap.js (MIT-licensed)
+        var data = [[38,20,1],[38,690,3],[48,30,1],[48,40,1],[50,150,1],[50,150,1],[50,150,1],[50,150,1],[50,150,1]];
+
+        var heat = simpleheat('canvas').data(data).max(18);
+        heat.draw();
+  </script>-->
+
+    <div class="cbp-af-header">
+        <div class="cbp-af-inner">
+            <h1><span style=""><span style="color:orange">tr</span>AI<span style="color:orange">ner</span><span style="color:orange"></h1>
+            <nav>
+                <span id="nav_real" style="">
+                    <a href="#">Inicio</a>
+                    <a href="#">Análisis</a>
+                    <a href="#">Proyecto</a>
+                </span>
+            </nav>
+        </div>
+    </div>
+
+
+    <div class="introDiv valign-wrapper" style="width:100%;">
+        <div class="valign left-align" style="margin:0px 40px">
+            <br><br><br><br><br><br><br><br>
+            <h1>
+                Conoce tus errores...
+            </h1>
+            <p>
+                o sucumbe ante ellos
+            </p>
+        </div>
+        
+    </div>
+    <br /><br><br>
+    <div class="mainContent">
+        <div class="row" style="width:40%;text-align:center">
+            <div class="col s12">
+                Nombre de usuario
+                <br />
+                <input id="userName" />
+                <div class="switch">
+                    <label>
+                      Elegir rol
+                      <input id="switch" type="checkbox">
+                      <span class="lever"></span>
+                      Elegir campeón
+                    </label>
+                  </div>
+
+                <br>
+                <div id="roleDropdown">
+                        <br>
+                        {% for tag in tags %}
+                            <input class="with-gap" name="group1" type="radio" id="tag{{ forloop.counter }}"  />
+                            <label for="tag{{ forloop.counter }}" style="padding-left:25px !important">{{ tag }}</label>
+                        {% endfor %}
+                        <br><br>
+                </div>
+                <div id="characterDropdown" style="display:none">
+                    <input id="tags" placeholder="Elige un personaje que analizar" />
+                </div>
+                
+                <div>
+                    <div class="input-field col s12">
+                        <select id="season_select">
+                          <option value="SEASON3">Temporada 3</option>
+                          <option value="SEASON2014">Temporada de 2014</option>
+                          <option value="SEASON2015">Temporada de 2015</option>
+                          <option value="SEASON2016" selected>Temporada de 2016</option>
+                        </select>
+                        <label>Temporada</label>
+                      </div>
+                      <script type="text/javascript">
+                          $(document).ready(function(){
+    $('.tooltipped').tooltip({delay: 50});
+  });
+        
+                      </script>
+                </div><br><br>
+                <br><br>
+                <input class="ghost-button center-align" type="submit"  onclick="summonerLookUp();" />
+            </div>
+        </div>
+        <div class="row analysisDiv">
+            <div class="col s12" id="goldAnalysisDiv">
+                
+            </div>
+            <div class="col s12" id="goldAnalysisDiv2">
+                
+            </div>
+            <div class="col s12 valign-wrapper" id="roleAnalysisDiv">
+                
+            </div>
+            <div class="col s12" id="roleAnalysisDiv2">
+                
+            </div>
+            <div class="col s6" id="">
+                <img width="100%" id="deathMap" src="{% static 'frontend/img/srmap.png' %}">
+            </div>
+            <div class="col s6" id="">
+                <img width="100%" id="deathMap2" src="{% static 'frontend/img/srmap.png' %}">
+            </div>
+        </div>
+
+        <div class="row">
+            
+        </div>
+        <div id="modal1" class="modal">
+            <div class="modal-content">
+              <h4 style="color:#21959e">Cargando datos...</h4>
+              <p>Este proceso puede tardar un poco...</p>
+              <div id="loadProgress" style="width:100%">
+                  
+              </div>
+              <div id="loadProgressText" style="text-align:center;color:#21959e;">
+                  0%   Cargando el usuario...
+              </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="{% static 'frontend/js/goldAnalysis.js' %}"></script>
+<script type="text/javascript" src="{% static 'frontend/js/roleAnalysis.js' %}"></script>
+<script type="text/javascript">
+    $(window).scroll(function (event) {
+        var scroll = $(window).scrollTop();
+        if(scroll>20){
+            //d3.select
+        }
+
+    });
+    var active = 'role';
+    var availableTags = [
+          {% for key, values in data.items %}
+              "{{ key }}",
+          {% endfor %}
+        ];
+    $(document).ready(function(){
+        $('select').material_select();
+        $( "#tags" ).autocomplete({
+          source: availableTags
+        });
+        $('#switch').on('click',function(){
+            sw_val = $(this).prop('checked');
+            if(sw_val){
+                $('#roleDropdown').hide();
+                $('#characterDropdown').show();
+                active = 'champion';
+            }
+            else{
+                $('#roleDropdown').show();
+                $('#characterDropdown').hide();
+                 active = 'role';
+            }
+        });
+    });
+    
+    /*$.ajax({
+                url: '/getsummonerdata/'+'Yrthgze',
+                type: 'GET',
+                success: function (json) {
+                   goldAnalysis(json);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    console.log(xhr.status);
+                    console.log(thrownError);
+                  }
+            });*/
+    var continue_status = 0;
+    var margin = { top: 10, right: 10, bottom: 10, left: 10 },
+        width = $('#loadProgress').width() - margin.left - margin.right,
+        height = 70 - margin.top - margin.bottom;
+    
+    var svg = d3.select('#loadProgress').append('svg')
+        .attr('id', 'progressSvg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', 'translate(' + 0 + ',' + margin.top + ')');
+    svg.append("linearGradient")
+              .attr("id", "temperature-gradient")
+              .attr("gradientUnits", "userSpaceOnUse")
+              .attr("x1", 0).attr("y1", "0%")
+              .attr("x2", 10).attr("y2", "100%")
+                .selectAll("stop")
+                  .data([
+                    {offset: "0%", color: "#e0f2f1","stop-opacity":0.2},
+                    {offset: "100%", color: "#00695c"}
+                  ])
+                .enter().append("stop")
+                  .attr("offset", function(d) { return d.offset; })
+                  .attr("stop-color", function(d) { return d.color; });
+        
+
+    var loadRect = svg.append('rect')
+                        .attr('x', 0)
+                        .attr('id','loadRect' )
+                        .attr('y', margin.top )
+                        .attr('height', 20)
+                        .attr('width',100 );
+    var loadScale; 
+    function get_status(){
+        $.ajax({
+            url:'/status',
+            type:'GET',
+            success:function(json){
+                
+                var value = json['status'] + json['status_complete'];
+                if(json['status'] == 0){
+                    text = 'el usuario...';
+                }
+                else if(json['status'] == 1){
+                    text = 'estadísticas...';
+                }
+                else if(json['status'] == 2){
+                    text = 'partidas de usuario...';
+                }
+                else{
+                    text = 'análisis...';
+                }
+                if(value>=3){
+                    value = 10;
+                }
+                if(value>2 && value <3){
+                    value = value*3;
+                }
+                percentage = (value/10*100).toFixed(2)+'%';
+                $('#loadProgressText').html(percentage+'   Cargando '+text);
+                loadRect.transition()
+                    .attr('width', function(){
+                        return loadScale(value);
+                    })
+            },
+            error:function (xhr, ajaxOptions, thrownError) {
+                    
+                    console.log(xhr.status);
+                    console.log(thrownError);
+                  }
+        });
+        if(continue_status == 1){
+            setTimeout(function(){
+                get_status();
+            },500);
+        }
+        else{
+            $.ajax({
+                url:'/init_status',
+                type:'GET'});
+        }
+    }
+
+    function get_object_by_id(obid){
+        
+    }
+
+    function drawDeathHeat(deaths,deaths2,ksval){
+        $('#canvas').html('');
+        $('#canvas2').html('');
+        $('#roleAnalysisDiv2').html("");
+        var message = "";
+        if(ksval < 0){
+            message = "Te arriesgas demasiado a la hora de colocarte. Deberías tener más cuidado cuando sales de tu linea o posición. Intenta evitar ir solo por el mapa, sobre todo en los últimos compases de las partidas que es cuando más cuentan las muertes.";
+        }
+        else if(ksval < 0.00005){
+            message = "Debes mejorar tu colocación en el mapa. Parece que te arriesgas a ir solo/a de vez en cuando y eso te pasa factura. Ten en cuenta donde estás tu y donde está tu equipo. Procura no alejarte mucho del mismo si quieres mejorar en este aspecto.";
+        }
+        else if(ksval < 0.0005){
+            message = "No te sueles colocar mal en el mapa pero si que es cierto que hay unas cuantas veces que te pillan desprevenido o solo. Debes tener cuidado de aventurarte a sitios en los que no debes estar sin compañeros que te respalden.";
+        }
+        else if(ksval < 0.001){
+            message = "No sueles descolocarte durante la partida pero parece que las veces que lo haces te cuestan caras. Ten cuidado de aventurarte a sitios que no esten con wards aliados y sobre todo evita ir solo.";
+        }
+        else if(ksval < 0.05){
+            
+            message = "Tu posición en el mapa es la correcta en la mayoría de los casos. Sin embargo, deberías pensar si cuando te matan es por que te aventuras solo a lugares peligrosos o no.";
+        }
+        else if(ksval < 0.1){
+            message = "Te colocas muy bien en el mapa. Si sientes que mueres más de lo necesario, no es provocado porque te coloques mal en el mismo.";
+        }
+        else{
+            message = "Tu colocación es perfecta. Si tienes un prolema con las muertes que te causan no es debido a tu mala colocación, eso tenlo seguro.";
+        }
+        var g_html = '<div class="col s12"><div class="card teal lighten-3"><div class="card-content white-text"><span class="card-title"></span><p>'+message+'</p></div></div></div>';
+        $('#roleAnalysisDiv2').append(g_html);
+        var ddwidth = $('#deathMap').width();
+        var ddheight = $('#deathMap').height();
+        var xScal = d3.scale.linear().domain([-120,14870]).range([0,ddwidth]);
+        var yScal = d3.scale.linear().domain([-120,14980]).range([ddheight,0]);
+        var data = deaths.map(function(d){
+            return {x:Math.round(xScal(d.x)),y:Math.round(yScal(d.y)),value:1};
+        });
+        var data2 = deaths2.map(function(d){
+            return {x:Math.round(xScal(d.x)),y:Math.round(yScal(d.y)),value:1};
+        });
+        console.log(data)
+        $('#canvas').width(ddwidth);
+        $('#canvas').height(ddheight);
+        $('#canvas').css('top',$('#deathMap').offset().top);
+        $('#canvas').css('left',$('#deathMap').offset().left);
+
+        $('#canvas2').width(ddwidth);
+        $('#canvas2').height(ddheight);
+        $('#canvas2').css('top',$('#deathMap2').offset().top);
+        $('#canvas2').css('left',$('#deathMap2').offset().left);
+        /*d3.select("#canvas").attr("width", ddwidth)
+    .attr("height", ddheight);
+        d3.select("#canvas").selectAll("circle")
+    .data(data)
+    .enter().append("circle")
+        .attr('cx', function(d) { return  d[0] })
+        .attr('cy', function(d) { return d[1] })
+        .attr('r', 5)
+        .style('fill', 'red')
+        .attr('class', 'kills');*/
+        //var heat = simpleheat('canvas2').data(data);
+        //heat.draw();
+        
+        var heatmap = h337.create({
+          container: document.getElementById('canvas')
+        });
+        heatmap.setData({
+            min:0,
+            max: 10,
+            data: data
+        });
+        var heatmap2 = h337.create({
+          container: document.getElementById('canvas2')
+        });
+        heatmap2.setData({
+            min:0,
+            max: 10,
+            data: data2
+        });
+        $('#canvas').css('position','absolute');
+         $('#canvas2').css('position','absolute');
+    }
+
+    function summonerLookUp() {
+        $('#progressSvg').width($('#modal1').width()-margin.left*4);
+        loadScale = d3.scale.linear().domain([0,10]).range([0,$('#progressSvg').width()-margin.left*1.7]);
+        $('#modal1').openModal({
+          dismissible: false
+        });
+        var s_n = "";
+        s_n = $("#userName").val();
+
+        if(active == 'role'){
+            var label = $("label[for='"+$('input[name=group1]:checked').attr('id')+"']").text();
+        }
+        else{
+            var label = $('#tags').val();
+        }
+        var season = $('#season_select').val();
+        if(season==null){
+            season = "SEASON2016";
+        }
+        if (s_n !== "") {
+            $.ajax({
+                url: '/getsummonerdata/'+s_n+'/'+active+'/'+label+'/'+season,
+                beforeSend:function(){
+                    continue_status = 1;
+                    get_status();
+                },
+                type: 'GET',
+                success: function (json) {
+                    continue_status = 0;
+                    if('error' in json){
+                        continue_status = 0;
+                        sweetAlert("Vaya, ha habido un problema...", json['error'], "error");
+                    }
+                    else{
+                        console.log(json);
+                        goldAnalysis(json.averages,json.avg_averages,json.final_objects_average,json.final_objectsavg_average,json.pe.objects,json.avg_events.objects,json.list_sim,json.mini_sim);
+                        //get_object_by_id(json['pe'][0][0]['itemId'])
+                        var deathss = json.pe.deaths;
+                        roleAnalysis(json,active,label);
+                        //json = json['pf'][0];
+                        
+                        //goldAnalysis(json);
+                        setTimeout(function(){
+                            drawDeathHeat(deathss,json.avg_events.deaths,json.ksval);
+                        },1500);
+                        
+                    }
+                    $('#modal1').closeModal();
+                    
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    $('#modal1').closeModal();
+                    continue_status = 0;
+                    console.log(xhr.status);
+                    console.log(thrownError);
+                  }
+            });
+        } 
+        else {
+            
+        }
+    }
+
+
+    var cbpAnimatedHeader = (function() {
+
+        var docElem = document.documentElement,
+            header = document.querySelector( '.cbp-af-header' ),
+            didScroll = false,
+            changeHeaderOn = 25;
+
+        function init() {
+            window.addEventListener( 'scroll', function( event ) {
+                if( !didScroll ) {
+                    didScroll = true;
+                    setTimeout( scrollPage, 250 );
+                }
+            }, false );
+        }
+
+        function scrollPage() {
+            var sy = scrollY();
+            if ( sy >= changeHeaderOn ) {
+                classie.add( header, 'cbp-af-header-shrink' );
+            }
+            else {
+                classie.remove( header, 'cbp-af-header-shrink' );
+            }
+            didScroll = false;
+        }
+
+        function scrollY() {
+            return window.pageYOffset || docElem.scrollTop;
+        }
+
+        init();
+
+    })();
+</script>
+</html>
